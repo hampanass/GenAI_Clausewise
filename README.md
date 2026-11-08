@@ -313,6 +313,59 @@ NEXTAUTH_URL=http://localhost:3000
 
 ---
 
+## 🌐 Production Deployment Guide
+
+ClauseWise is pre-configured for seamless production hosting:
+
+### 1. Deploy Frontend on Vercel
+1. Push your repository to GitHub: [`https://github.com/Mohnish-140605/GenAI_Clausewise`](https://github.com/Mohnish-140605/GenAI_Clausewise).
+2. Go to [vercel.com](https://vercel.com) and click **"Add New Project"**.
+3. Import `GenAI_Clausewise` and set:
+   * **Root Directory**: `frontend`
+   * **Framework Preset**: `Next.js`
+4. Add the following **Environment Variables** in Vercel:
+   * `NEXT_PUBLIC_API_BASE_URL`: URL of your deployed backend (e.g., `https://clausewise-api.onrender.com`)
+   * `NEXTAUTH_URL`: Your Vercel domain (e.g., `https://genai-clausewise.vercel.app`)
+   * `NEXTAUTH_SECRET`: Random 32-byte secret (`openssl rand -base64 32`)
+   * `GOOGLE_CLIENT_ID`: Your Google OAuth Client ID
+   * `GOOGLE_CLIENT_SECRET`: Your Google OAuth Client Secret
+5. Click **Deploy**.
+
+---
+
+### 2. Deploy Backend on Render or Railway
+* **Option A: Render Blueprint (1-Click)**
+  1. Go to [render.com](https://render.com) → **New** → **Blueprint**.
+  2. Connect your repo `Mohnish-140605/GenAI_Clausewise`. Render will automatically detect `render.yaml`.
+  3. Enter your `GROQ_API_KEY` when prompted and click **Apply**.
+* **Option B: Docker / Container Deployment**
+  A production `backend/Dockerfile` and `backend/Procfile` are included in the repository. Set the container port to `8000`.
+
+---
+
+## 🔑 Google Cloud Console OAuth Configuration Guide
+
+When running locally or deploying to production, configure your Google OAuth 2.0 Client credentials:
+
+1. Open [Google Cloud Console](https://console.cloud.google.com).
+2. Navigate to **APIs & Services** → **Credentials**.
+3. Click your **OAuth 2.0 Client ID** (under *Web application*).
+4. Scroll down to:
+
+### A. Authorized JavaScript Origins
+Add both your local dev URL and production domain:
+* `http://localhost:3000` *(Local development)*
+* `https://genai-clausewise.vercel.app` *(Your production domain without trailing slash)*
+
+### B. Authorized Redirect URIs
+NextAuth requires the `/api/auth/callback/google` route:
+* `http://localhost:3000/api/auth/callback/google` *(Local development)*
+* `https://genai-clausewise.vercel.app/api/auth/callback/google` *(Your production callback URL)*
+
+5. Click **Save**. Updates typically take 1–2 minutes to propagate across Google's edge servers.
+
+---
+
 ## 📊 Groq Usage & Rate Limits
 
 ClauseWise is optimized for high efficiency:

@@ -1,0 +1,41 @@
+services:
+  # Backend FastAPI Web Service
+  - type: web
+    name: clausewise-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: FRONTEND_ORIGINS
+        value: https://clausewise.vercel.app,http://localhost:3000
+      - key: MAX_UPLOAD_SIZE_MB
+        value: 20
+      - key: MAX_COMBINED_TEXT_CHARS
+        value: 180000
+
+  # Frontend Next.js Web Service
+  - type: web
+    name: clausewise-frontend
+    env: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_BASE_URL
+        fromService:
+          type: web
+          name: clausewise-backend
+          property: host
+      - key: NEXTAUTH_URL
+        value: https://clausewise.vercel.app
+      - key: NEXTAUTH_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
