@@ -3,11 +3,12 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, HTTPException, UploadFile, status
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.models import AnalysisResult
-from app.services.analyzer import analyze_documents
+from app.models import AnalysisResult, CompanyProfile
+from app.services.analyzer import analyze_documents, assess_company_eligibility
+from app.services.demo_data import DEMO_SCENARIOS
 from app.services.pdf import extract_pdf
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
@@ -72,13 +73,45 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/api/v1/demo/{scenario_id}", response_model=AnalysisResult)
+async def get_demo_scenario(scenario_id: str, turnover: str | None = None, experience_years: str | None = None, certifications: str | None = None) -> AnalysisResult:
+    scenario = DEMO_SCENARIOS.get(scenario_id)
+    if not scenario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Demo scenario '{scenario_id}' not found. Available scenarios: {', '.join(DEMO_SCENARIOS.keys())}",
+        )
+    result = scenario.model_copy(deep=True)
+    if turnover or experience_years or certifications:
+        cert_list = [c.strip() for c in certifications.split(",")] if certifications else []
+        profile = CompanyProfile(
+            turnover=turnover,
+            experience_years=experience_years,
+            certifications=cert_list,
+        )
+        assessment = assess_company_eligibility(result, profile)
+        result.company_profile = profile
+        result.company_assessment = assessment
+    return result
+
+
 @app.post("/api/v1/amendments/analyze", response_model=AnalysisResult)
 async def analyze_amendment(
     original_file: UploadFile = File(...),
     amended_file: UploadFile = File(...),
+    company_profile: str | None = Form(None),
 ) -> AnalysisResult:
     original_bytes = await read_pdf(original_file, "original")
     amended_bytes = await read_pdf(amended_file, "amended")
     original_document = extract_pdf(original_bytes, "original")
     amended_document = extract_pdf(amended_bytes, "amended")
-    return await analyze_documents(original_document, amended_document)
+
+    profile: CompanyProfile | None = None
+    if company_profile:
+        try:
+            profile = CompanyProfile.model_validate_json(company_profile)
+        except Exception:
+            # If invalid JSON, ignore and proceed without company profile
+            profile = None
+
+    return await analyze_documents(original_document, amended_document, company_profile=profile)

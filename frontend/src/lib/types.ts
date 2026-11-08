@@ -18,6 +18,36 @@ export interface RequirementChange {
   needs_review: boolean;
 }
 
+export type EligibilityStatus = "eligible" | "conditionally_eligible" | "ineligible";
+
+export type ComplianceCheckStatus = "met" | "not_met" | "needs_verification";
+
+export interface CompanyProfile {
+  turnover?: string;
+  experience_years?: string;
+  certifications?: string[];
+  notes?: string;
+}
+
+export interface RequirementCompliance {
+  requirement: string;
+  status: ComplianceCheckStatus;
+  reason: string;
+  recommendation?: string;
+}
+
+export interface CompanyAssessment {
+  verdict: EligibilityStatus;
+  summary: string;
+  compliance_checks: RequirementCompliance[];
+}
+
+export interface GroqUsage {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+}
+
 export interface AnalysisResult {
   summary: string;
   counts: {
@@ -28,4 +58,7 @@ export interface AnalysisResult {
   changes: RequirementChange[];
   items_to_review: string[];
   warnings: string[];
+  company_profile?: CompanyProfile | null;
+  company_assessment?: CompanyAssessment | null;
+  usage?: GroqUsage | null;
 }
